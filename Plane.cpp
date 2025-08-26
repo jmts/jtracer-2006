@@ -4,12 +4,12 @@
 Plane::Plane(Vector _n, float d)
 {
 	Vector n = _n.unit();
+	m_vNormal = n;
+
 	Vector p = n*d;
 
 	m_fD = n.x*p.x + n.y*p.y + n.z*p.z;
 	m_fD = -m_fD;
-
-	m_vNormal = n;
 }
 
 int Plane::intersect(const Ray &ray, float &t)
@@ -18,12 +18,15 @@ int Plane::intersect(const Ray &ray, float &t)
 	Vector v = ray.o;
 	Vector u = ray.d;
 
+	if (n.dot(u) > 0.0)
+		return 0;
+
 	float fNum = -(n.x*v.x + n.y*v.y + n.z*v.z + m_fD);
 	float fDenom = n.x*u.x + n.y*u.y + n.z*u.z;
 
 	t = fNum/fDenom;
 
-	if (t >= 0.0)
+	if (t > 0.0)
 		return 1;
 
 	return 0;

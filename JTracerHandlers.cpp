@@ -51,6 +51,7 @@ std::vector<Primitive*>g_vPrimitives;
 
 std::vector<PointLight*>g_vLights;
 
+/*
 int LoadScene()
 {
 	Scene s;
@@ -61,27 +62,88 @@ int LoadScene()
 	Primitive *pPrimitive;
 
 	// Red Sphere
-	mMaterial = Material(Color(1.0, 0.0, 0.0), 0.0, 0.8, 1.0);
+	mMaterial = Material(Color(1.0, 0.0, 0.0), 0.1, 1.0, 1.0);
 	pPrimitive = new Sphere(Vector(-1, 0, 0), 0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
 	g_vPrimitives.push_back(pPrimitive);
 	
 	// Green Sphere
-	mMaterial = Material(Color(0.0, 1.0, 0.0), 0.0, 0.8, 1.0);
+	mMaterial = Material(Color(0.0, 1.0, 0.0), 0.1, 1.0, 1.0);
 	pPrimitive = new Sphere(Vector(0, 0, 0), 0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
 	g_vPrimitives.push_back(pPrimitive);
 
 	// Blue Sphere
-	mMaterial = Material(Color(0.0, 0.0, 1.0), 0.0, 0.8, 1.0);
+	mMaterial = Material(Color(0.0, 0.0, 1.0), 0.1, 1.0, 1.0);
 	pPrimitive = new Sphere(Vector(1, 0, 0), 0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
 	g_vPrimitives.push_back(pPrimitive);
 
-	mMaterial = Material(Color(1.0, 1.0, 1.0), 0.1, 0.8, 1.0);
+	// White Plane
+	mMaterial = Material(Color(1.0, 1.0, 1.0), 0.1, 1.0, 1.0);
+	pPrimitive = new Plane(Vector(0, 1, 0), -0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
+
+	// Light
+	PointLight *lLight = new PointLight(Color(1.0, 1.0, 1.0), Vector(0.0, 5.0, -15.0));
+	s.addLight(lLight);
+	g_vLights.push_back(lLight);
+
+	lLight = new PointLight(Color(1.0, 1.0, 1.0), Vector(15.0, 5.0, 0.0));
+	s.addLight(lLight);
+	g_vLights.push_back(lLight);
+
+	g_tRender.setScene(s);
+
+	// Set Camera
+	Vector vPosition(1.0f, 0.75f, -5.0f);
+	Vector vLookAt(0.0f, 0.0f, 0.0f);
+	Vector vLook = (vLookAt - vPosition).unit();
+	float fAspect = 4.0f/3.0f;
+	float fAngleOfView = M_PI/3.4f;
+	Camera cCamera(vPosition, vLook, fAspect, fAngleOfView);
+	g_tRender.setCamera(cCamera);
+
+	return 0;
+}
+*/
+
+int LoadScene()
+{
+	Scene s;
+	s.setAmbientLight(Color(1.0, 1.0, 1.0));
+
+	Color cColor;
+	Material mMaterial;
+	Primitive *pPrimitive;
+
+	// Red Sphere
+	mMaterial = Material(Color(1.0, 0.0, 0.0), 0.1, 0.6, 1.0);
+	pPrimitive = new Sphere(Vector(-1, 0, 0), 0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
+	
+	// Green Sphere
+	mMaterial = Material(Color(0.0, 1.0, 0.0), 0.1, 0.6, 1.0);
+	pPrimitive = new Sphere(Vector(0, 0, 0), 0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
+
+	// Blue Sphere
+	mMaterial = Material(Color(0.0, 0.0, 1.0), 0.1, 0.6, 1.0);
+	pPrimitive = new Sphere(Vector(1, 0, 0), 0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
+
+	mMaterial = Material(Color(1.0, 1.0, 1.0), 0.1, 0.6, 1.0);
 	pPrimitive = new Plane(Vector(0, 1, 0), -0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
@@ -101,6 +163,8 @@ int LoadScene()
 	// Set Camera
 	Vector vPosition(1.0f, 2.0f, -5.0f);
 	Vector vLookAt(0.0f, 0.0f, 0.0f);
+	//Vector vPosition(0.5f, 0.0f, -1.0f);
+	//Vector vLookAt(0.5f, 0.0f, 0.0f);
 	Vector vLook = (vLookAt - vPosition).unit();
 	float fAspect = 4.0f/3.0f;
 	float fAngleOfView = M_PI/4.0f;

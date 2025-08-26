@@ -4,6 +4,9 @@
 
 int Sphere::intersect(const Ray &ray, float &t)
 {
+	if ((ray.o - o).dot(ray.d) > 0.0)
+		return 0;
+
 	Vector dst = ray.o - o;
 
 	float fLen = ray.d.length();

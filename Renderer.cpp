@@ -50,10 +50,131 @@ int Renderer::reset()
 
 //////////////////////////////////////////////////////////////////////
 
+int Renderer::findIntersection(Ray &r, float &t, Primitive **p)
+{
+	bool bIntersection = false;
+	Primitive *pClosest;
+	float fTClosest;
+	int nPrimitives = m_sScene.getNumPrimitives();
+	for (int i = 0; i < nPrimitives; i++)
+	{
+		Primitive *pCurrent = m_sScene.getPrimitive(i);
+
+		float fTCurrent;
+		if (pCurrent->intersect(r, fTCurrent))
+		{
+			if (bIntersection == false)
+			{
+				pClosest = pCurrent;
+				fTClosest = fTCurrent;
+				bIntersection = true;
+			}
+			else if (fTCurrent < fTClosest)
+			{
+				pClosest = pCurrent;
+				fTClosest = fTCurrent;
+			}
+		}
+	}
+
+	if (bIntersection)
+	{
+		t = fTClosest;
+		*p = pClosest;
+		return 1;
+	}
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int Renderer::findShadowCaster(Ray &r, Primitive *p)
+{
+	bool bShadow = false;
+	int nPrimitives = m_sScene.getNumPrimitives();
+
+	float t;
+	for (int i = 0; i < nPrimitives && !bShadow; i++)
+	{
+		Primitive *pCurrent = m_sScene.getPrimitive(i);
+		if (pCurrent != p && pCurrent->intersect(r, t) && t > 0.0 && t < 1.0)
+			bShadow = true;
+	}
+
+	if (bShadow)
+		return 1;
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int Renderer::raytrace(Ray r, Color &c, int nRecursions)
+{
+	Primitive *pClosest;
+	float fTClosest;
+	if (findIntersection(r, fTClosest, &pClosest))
+	{
+		Material m = pClosest->getMaterial();
+
+		Color cAmbient;
+		Color cDiffuse;
+		Color cSpecular;
+		Color cReflect;
+
+		cAmbient = m.getPigment() * m_sScene.getAmbientLight() * m.getAmbient();
+
+		Vector vIntersect = r.o + (r.d * fTClosest);
+		Vector vNormal = pClosest->getNormalAt(vIntersect);
+		Vector vView = r.d;
+
+		int nLights = m_sScene.getNumLights();
+		for (int i = 0; i < nLights; i++)
+		{
+			PointLight *lLight = m_sScene.getLight(i);
+			Ray rShadow(vIntersect, (lLight->getPosition() - vIntersect));
+
+			if (!findShadowCaster(rShadow, pClosest))
+			{
+				Vector vLight = (lLight->getPosition() - vIntersect).unit();
+				Vector vReflect = (vLight).reflect(vNormal);
+
+				float fDot;
+				fDot = vLight.dot(vNormal);
+				if (fDot > 0)
+					cDiffuse += m.getPigment() * lLight->getColor() * fDot * m.getDiffuse();
+
+				fDot = vReflect.dot(vView);
+				if (fDot > 0)
+					cSpecular += lLight->getColor() * m.getSpecular() * std::pow(fDot, 8);
+			}
+		}
+
+		if (nRecursions > 0)
+		{
+			Ray rReflect(vIntersect, vView.reflect(vNormal));
+			if (raytrace(rReflect, cReflect, nRecursions-1))
+			{
+				cReflect *= 0.8;
+			}
+		}
+
+		c = cAmbient + cDiffuse + cSpecular + cReflect;
+	}
+	else
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 int Renderer::renderLine()
 {
-	int nPrimitives = m_sScene.getNumPrimitives();
-	if (nPrimitives == 0)
+	if (m_sScene.getNumPrimitives() == 0 || m_sScene.getNumLights() == 0)
 		return 1;
 
 	int nHeight = m_cCanvas.getHeight();
@@ -74,79 +195,10 @@ int Renderer::renderLine()
 
 		Ray r = m_cCamera.getRay(fx, fy);
 
-		bool bIntersection = false;
-		Primitive *pClosest;
-		float fTClosest;
-		for (int i = 0; i < nPrimitives; i++)
-		{
-			Primitive *p = m_sScene.getPrimitive(i);
-			float t;
-
-			if (p->intersect(r, t))
-			{
-				if (bIntersection == false)
-				{
-					pClosest = p;
-					fTClosest = t;
-					bIntersection = true;
-				}
-				else if (t < fTClosest)
-				{
-					pClosest = p;
-					fTClosest = t;
-				}
-			}
-		}
-
-		// Draw Dot On Canvas
-		if (bIntersection)
-		{
-			Material m = pClosest->getMaterial();
-			Color cAmbient   = m.getPigment() * m_sScene.getAmbientLight() * m.getAmbient();
-
-			Color cDiffuse;
-			Color cSpecular;
-			Vector vIntersect = r.o + (r.d*fTClosest);
-			for (int iLight = 0; iLight < m_sScene.getNumLights(); iLight++)
-			{
-				PointLight *lLight = m_sScene.getLight(iLight);
-				Ray rShadow(vIntersect, (lLight->getPosition() - vIntersect));
-				bool bShadow = false;
-				float fTShadow;
-				for (int s = 0; s < nPrimitives && !bShadow; s++)
-				{
-					Primitive *ps = m_sScene.getPrimitive(s);
-					if (pClosest != ps && ps->intersect(rShadow, fTShadow))
-						if (fTShadow > 0.0 && fTShadow < 1.0)
-							bShadow = true;
-				}
-
-				if (!bShadow)
-				{
-					Vector vLight = (lLight->getPosition() - vIntersect).unit();
-					Vector vNormal = pClosest->getNormalAt(vIntersect);
-					Vector vView = r.d;
-					Vector vReflect = (vLight).reflect(vNormal);
-					
-					float fDot;
-					fDot = vLight.dot(vNormal);
-					if (fDot > 0)
-						cDiffuse += m.getPigment() * lLight->getColor() * fDot * m.getDiffuse();
-	
-					fDot = vReflect.dot(vView);
-					if (fDot > 0)
-						cSpecular += lLight->getColor() * m.getSpecular() * std::pow(fDot, 15);
-				}
-			}
-
-			Color cPixel = cAmbient + cDiffuse + cSpecular;
-
-			m_cCanvas.setPixel(x, m_nNextLine, cPixel);
-		}
+		if (raytrace(r, c, 5))
+			m_cCanvas.setPixel(x, m_nNextLine, c);
 		else
-		{
 			m_cCanvas.setPixel(x, m_nNextLine, m_cColor);
-		}
 	}
 	// End Render Code
 

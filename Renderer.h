@@ -30,6 +30,9 @@ class Renderer
 	int reset();
 
 	int renderLine();
+	int raytrace(Ray r, Color &c, int nRecursions);
+	int findShadowCaster(Ray &r, Primitive *p);
+	int findIntersection(Ray &r, float &t, Primitive **p);
 
 	int getLine(int nLine, float *fRed, float *fGreen, float *fBlue, int nSize);
 
