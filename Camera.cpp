@@ -47,3 +47,17 @@ int Camera::getRay(float x, float y, Ray &ray)
 
 	return 1;
 }
+
+const Ray Camera::getRay(float x, float y)
+{
+	if (x < 0.0f || x > 1.0f || y < 0.0f || y > 1.0f)
+		return Ray();
+
+	x -= 0.5f;
+	y -= 0.5f;
+
+	Vector vDirection = m_vDirection + (m_vRight * x) + (m_vUp * -y);
+	vDirection = vDirection.unit();
+
+	return Ray(m_vPosition, vDirection);
+}

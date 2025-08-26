@@ -26,6 +26,7 @@ class Camera
 	Camera();
 	Camera(Vector vPosition, Vector vLook, float fAspect, float fAngle);
 	int getRay(float x, float y, Ray &ray);
+	const Ray getRay(float x, float y);
 };
 
 #endif

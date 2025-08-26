@@ -35,6 +35,23 @@ Primitive* Scene::getPrimitive(int i)
 	return m_vPrimitives.at(i);
 }
 
+int Scene::addLight(PointLight *p)
+{
+	m_vLights.push_back(p);
+
+	return 0;
+}
+
+int Scene::getNumLights()
+{
+	return m_vLights.size();
+}
+
+PointLight* Scene::getLight(int i)
+{
+	return m_vLights.at(i);
+}
+
 //////////////////////////////////////////////////////////////////////
 
 int Scene::setAmbientLight(Color &c)
@@ -51,6 +68,13 @@ int Scene::getAmbientLight(Color &c)
 	c = m_cAmbient;
 
 	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+const Color Scene::getAmbientLight()
+{
+	return m_cAmbient;
 }
 
 //////////////////////////////////////////////////////////////////////

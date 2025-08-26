@@ -5,7 +5,9 @@
 #include "Scene.h"
 #include "Sphere.h"
 #include "Primitive.h"
+#include "PointLight.h"
 #include <cmath>
+#include <vector>
 
 //////////////////////////////////////////////////////////////////////
 
@@ -19,8 +21,6 @@ int g_nRasterWidth;
 int g_nRasterHeight;
 
 RenderThread g_tRender;
-
-Primitive *g_pSphere[3];
 
 //////////////////////////////////////////////////////////////////////
 
@@ -46,48 +46,71 @@ HWND CreateWindowAdjustFontEx(DWORD dwExStyle, LPCTSTR lpClassName, LPCTSTR lpWi
 
 //////////////////////////////////////////////////////////////////////
 
+std::vector<Primitive*>g_vPrimitives;
+
+std::vector<PointLight*>g_vLights;
+
 int LoadScene()
 {
 	Scene s;
+	s.setAmbientLight(Color(1.0, 1.0, 1.0));
 
-	Color cColor = {0.0f};
-	cColor.fRed = 1.0f;
-	Material mRedMaterial;
-	mRedMaterial.setPigment(cColor);
+	Color cColor;
+	Material mMaterial;
+	Primitive *pPrimitive;
 
-	Material mGreenMaterial;
-	cColor.fRed = 0.0f;
-	cColor.fGreen = 1.0f;
-	mGreenMaterial.setPigment(cColor);
+	// Red Sphere
+	mMaterial = Material(Color(1.0, 0.0, 0.0), 0.2, 1.0);
+	pPrimitive = new Sphere(Vector(-1, 0, 0), 0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
+	
+	// Green Sphere
+	mMaterial = Material(Color(0.0, 1.0, 0.0), 0.2, 1.0);
+	pPrimitive = new Sphere(Vector(0, 0, 0), 0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
 
-	Material mBlueMaterial;
-	cColor.fGreen = 0.0f;
-	cColor.fBlue = 1.0f;
-	mBlueMaterial.setPigment(cColor);
+	// Blue Sphere
+	mMaterial = Material(Color(0.0, 0.0, 1.0), 0.2, 1.0);
+	pPrimitive = new Sphere(Vector(1, 0, 0), 0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
 
-	g_pSphere[0] = new Sphere(Vector(-1, 0, 0), 0.5);
-	g_pSphere[1] = new Sphere(Vector(0, 0, 0), 0.5);
-	g_pSphere[2] = new Sphere(Vector(1, 0, 0), 0.5);
+	// Light
+	PointLight *lLight = new PointLight(Color(1.0, 1.0, 1.0), Vector(5.0, 5.0, -10.0));
+	s.addLight(lLight);
+	g_vLights.push_back(lLight);
 
-	g_pSphere[0]->setMaterial(mRedMaterial);
-	s.addPrimitive(g_pSphere[0]);
+	g_tRender.setScene(s);
 
-	g_pSphere[1]->setMaterial(mGreenMaterial);
-	s.addPrimitive(g_pSphere[1]);
-
-	g_pSphere[2]->setMaterial(mBlueMaterial);
-	s.addPrimitive(g_pSphere[2]);
-
+	// Set Camera
 	Vector vPosition = Vector(0.0f, 0.0f, -5.0f);
 	Vector vLook = Vector(0.0f, 0.0f, 1.0f);
 	float fAspect = 4.0f/3.0f;
 	float fAngleOfView = M_PI/4.0f;
-
 	Camera cCamera(vPosition, vLook, fAspect, fAngleOfView);
-
-	g_tRender.setScene(s);
-
 	g_tRender.setCamera(cCamera);
+
+	return 0;
+}
+
+int FreeScene()
+{
+	for (size_t i = 0; i < g_vPrimitives.size(); i++)
+	{
+		Primitive *p = g_vPrimitives.at(i);
+		delete p;
+	}
+
+	for (size_t i = 0; i < g_vLights.size(); i++)
+	{
+		PointLight *l = g_vLights.at(i);
+		delete l;
+	}
 
 	return 0;
 }
@@ -303,14 +326,7 @@ LRESULT OnClose(HWND hwnd)
 
 LRESULT OnDestroy(HWND hwnd)
 {
-	if (g_pSphere[0])
-		delete g_pSphere[0];
-
-	if (g_pSphere[1])
-		delete g_pSphere[1];
-
-	if (g_pSphere[2])
-		delete g_pSphere[2];
+	FreeScene();
 
 	if (g_hbmRaster)
 		DeleteObject(g_hbmRaster);

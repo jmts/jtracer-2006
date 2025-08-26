@@ -15,8 +15,10 @@ class Primitive
 	Primitive(const Primitive &p) : m_mMaterial(p.m_mMaterial) {}
 	int setMaterial(Material &m);
 	int getMaterial(Material &m);
+	const Material getMaterial();
 
 	virtual int intersect(const Ray& ray, float &t) = 0;
+	virtual const Vector getNormalAt(const Vector &v) = 0;
 };
 
 #endif

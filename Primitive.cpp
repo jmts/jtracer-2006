@@ -14,3 +14,8 @@ int Primitive::getMaterial(Material &m)
 
 	return 0;
 }
+
+const Material Primitive::getMaterial()
+{
+	return m_mMaterial;
+}

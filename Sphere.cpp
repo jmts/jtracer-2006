@@ -20,3 +20,8 @@ int Sphere::intersect(const Ray &ray, float &t)
 
 	return 0;
 }
+
+const Vector Sphere::getNormalAt(const Vector &v)
+{
+	return (v - o).unit();
+}

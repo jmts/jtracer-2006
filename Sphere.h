@@ -17,6 +17,8 @@ class Sphere : public Primitive
 	Sphere(const Sphere &s) : o(s.o), r(s.r) {}
 
 	virtual int intersect(const Ray &ray, float &t);
+
+	virtual const Vector getNormalAt(const Vector &v);
 };
 
 #endif

@@ -72,8 +72,7 @@ int Renderer::renderLine()
 	{
 		float fx = (float)x / (float)nWidth;
 
-		Ray r;
-		m_cCamera.getRay(fx, fy, r);
+		Ray r = m_cCamera.getRay(fx, fy);
 
 		bool bIntersection = false;
 		Primitive *pClosest;
@@ -102,12 +101,27 @@ int Renderer::renderLine()
 		// Draw Dot On Canvas
 		if (bIntersection)
 		{
-			Material m;
-			pClosest->getMaterial(m);
-			Color c;
-			m.getPigment(c);
+			Material m = pClosest->getMaterial();
+			Color cAmbient   = m.getPigment() * m_sScene.getAmbientLight() * m.getAmbient();
 
-			m_cCanvas.setPixel(x, m_nNextLine, c);
+			Color cDiffuse;
+			Vector vIntersect = r.o + (r.d*fTClosest);
+			for (int iLight = 0; iLight < m_sScene.getNumLights(); iLight++)
+			{
+				PointLight *lLight = m_sScene.getLight(iLight);
+				Vector vLight = (lLight->getPosition() - vIntersect).unit();
+				Vector vNormal = pClosest->getNormalAt(vIntersect);
+				
+				float fDot = vLight.dot(vNormal);
+				{
+					if (fDot > 0)
+						cDiffuse += m.getPigment() * lLight->getColor() * fDot * m.getDiffuse();
+				}
+			}
+
+			Color cPixel = cAmbient + cDiffuse;
+
+			m_cCanvas.setPixel(x, m_nNextLine, cPixel);
 		}
 		else
 		{
