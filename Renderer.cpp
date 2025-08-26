@@ -1,6 +1,5 @@
 
 #include "Renderer.h"
-#include "Color.h"
 #include <cmath>
 
 //////////////////////////////////////////////////////////////////////
@@ -53,6 +52,10 @@ int Renderer::reset()
 
 int Renderer::renderLine()
 {
+	int nPrimitives = m_sScene.getNumPrimitives();
+	if (nPrimitives == 0)
+		return 1;
+
 	int nHeight = m_cCanvas.getHeight();
 	int nWidth = m_cCanvas.getWidth();
 
@@ -62,18 +65,56 @@ int Renderer::renderLine()
 	if (getStatus() == RS_READY)
 		setStatus(RS_INCOMPLETE);
 
-	float pi50 = M_PI / 50.0f;
-
+	// Render Code
 	Color c;
-	float fY = (std::sin(pi50 * (float)m_nNextLine) * 0.5f) + 0.5f;
+	float fy = (float)m_nNextLine / (float)nHeight;
 	for (int x = 0; x < nWidth; x++)
 	{
-		c.fRed   = ((std::sin(pi50 * (float)x) * 0.5f)+0.5f) * fY;
-		c.fGreen = c.fRed;
-		c.fBlue  = c.fRed;
-		
-		m_cCanvas.setPixel(x, m_nNextLine, c);
+		float fx = (float)x / (float)nWidth;
+
+		Ray r;
+		m_cCamera.getRay(fx, fy, r);
+
+		bool bIntersection = false;
+		Primitive *pClosest;
+		float fTClosest;
+		for (int i = 0; i < nPrimitives; i++)
+		{
+			Primitive *p = m_sScene.getPrimitive(i);
+			float t;
+
+			if (p->intersect(r, t))
+			{
+				if (bIntersection == false)
+				{
+					pClosest = p;
+					fTClosest = t;
+					bIntersection = true;
+				}
+				else if (t < fTClosest)
+				{
+					pClosest = p;
+					fTClosest = t;
+				}
+			}
+		}
+
+		// Draw Dot On Canvas
+		if (bIntersection)
+		{
+			Material m;
+			pClosest->getMaterial(m);
+			Color c;
+			m.getPigment(c);
+
+			m_cCanvas.setPixel(x, m_nNextLine, c);
+		}
+		else
+		{
+			m_cCanvas.setPixel(x, m_nNextLine, m_cColor);
+		}
 	}
+	// End Render Code
 
 	m_nNextLine++;
 
@@ -133,15 +174,21 @@ int Renderer::getDimensions(int &nWidth, int &nHeight)
 	return 0;
 }
 
+//////////////////////////////////////////////////////////////////////
+
 int Renderer::getWidth()
 {
 	return m_cCanvas.getWidth();
 }
 
+//////////////////////////////////////////////////////////////////////
+
 int Renderer::getHeight()
 {
 	return m_cCanvas.getHeight();
 }
+
+//////////////////////////////////////////////////////////////////////
 
 int Renderer::getLinesComplete()
 {
@@ -160,6 +207,42 @@ RenderStatus Renderer::getStatus()
 int Renderer::setStatus(RenderStatus rsStatus)
 {
 	m_rsStatus = rsStatus;
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int Renderer::setCamera(Camera &c)
+{
+	m_cCamera = c;
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int Renderer::getCamera(Camera &c)
+{
+	c = m_cCamera;
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int Renderer::setScene(Scene &s)
+{
+	m_sScene = s;
+
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int Renderer::getScene(Scene &s)
+{
+	s = m_sScene;
 
 	return 0;
 }

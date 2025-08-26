@@ -1,6 +1,11 @@
 
 #include "JTracerHandlers.h"
 #include "RenderThread.h"
+#include "Camera.h"
+#include "Scene.h"
+#include "Sphere.h"
+#include "Primitive.h"
+#include <cmath>
 
 //////////////////////////////////////////////////////////////////////
 
@@ -8,15 +13,14 @@ HWND g_hImage;
 HWND g_hStartStop;
 BOOL g_bRunning;
 
-COLORREF g_crColorMap[3];
-int g_iMapIndex;
-
 HBITMAP g_hbmRaster;
 int g_nLinesUpdated;
 int g_nRasterWidth;
 int g_nRasterHeight;
 
 RenderThread g_tRender;
+
+Primitive *g_pSphere[3];
 
 //////////////////////////////////////////////////////////////////////
 
@@ -38,6 +42,54 @@ HWND CreateWindowAdjustFontEx(DWORD dwExStyle, LPCTSTR lpClassName, LPCTSTR lpWi
 		SendMessage(hwnd, WM_SETFONT, (WPARAM)GetStockObject(DEFAULT_GUI_FONT), FALSE);
 
 	return hwnd;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int LoadScene()
+{
+	Scene s;
+
+	Color cColor = {0.0f};
+	cColor.fRed = 1.0f;
+	Material mRedMaterial;
+	mRedMaterial.setPigment(cColor);
+
+	Material mGreenMaterial;
+	cColor.fRed = 0.0f;
+	cColor.fGreen = 1.0f;
+	mGreenMaterial.setPigment(cColor);
+
+	Material mBlueMaterial;
+	cColor.fGreen = 0.0f;
+	cColor.fBlue = 1.0f;
+	mBlueMaterial.setPigment(cColor);
+
+	g_pSphere[0] = new Sphere(Vector(-1, 0, 0), 0.5);
+	g_pSphere[1] = new Sphere(Vector(0, 0, 0), 0.5);
+	g_pSphere[2] = new Sphere(Vector(1, 0, 0), 0.5);
+
+	g_pSphere[0]->setMaterial(mRedMaterial);
+	s.addPrimitive(g_pSphere[0]);
+
+	g_pSphere[1]->setMaterial(mGreenMaterial);
+	s.addPrimitive(g_pSphere[1]);
+
+	g_pSphere[2]->setMaterial(mBlueMaterial);
+	s.addPrimitive(g_pSphere[2]);
+
+	Vector vPosition = Vector(0.0f, 0.0f, -5.0f);
+	Vector vLook = Vector(0.0f, 0.0f, 1.0f);
+	float fAspect = 4.0f/3.0f;
+	float fAngleOfView = M_PI/4.0f;
+
+	Camera cCamera(vPosition, vLook, fAspect, fAngleOfView);
+
+	g_tRender.setScene(s);
+
+	g_tRender.setCamera(cCamera);
+
+	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -74,10 +126,7 @@ LRESULT OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
 	g_nRasterWidth = 0;
 	g_nRasterHeight = 0;
 
-	g_crColorMap[0] = RGB(255, 0, 0);
-	g_crColorMap[1] = RGB(0, 255, 0);
-	g_crColorMap[2] = RGB(0, 0, 255);
-	g_iMapIndex = -1;
+	LoadScene();
 
 	return 0;
 }
@@ -136,7 +185,6 @@ LRESULT OnThreadStarted(HWND hwnd)
 	g_bRunning = TRUE;
 
 	g_nLinesUpdated = 0;
-	g_iMapIndex = (g_iMapIndex + 1) % 3;
 
 	// Check Bitmap Size
 	int nWidth, nHeight;
@@ -207,18 +255,14 @@ LRESULT OnLineRendered(HWND hwnd)
 
 	int nLines = g_tRender.getLinesComplete();
 
-	float fRValue = GetRValue(g_crColorMap[g_iMapIndex]);
-	float fGValue = GetGValue(g_crColorMap[g_iMapIndex]);
-	float fBValue = GetBValue(g_crColorMap[g_iMapIndex]);
-
 	for (int y = g_nLinesUpdated; y < nLines; y++)
 	{
 		g_tRender.getLine(y, fRed, fGreen, fBlue, g_nRasterWidth);
 		for (int x = 0; x < g_nRasterWidth; x++)
 		{
-			nRed   = fRed[x]   * fRValue;
-			nGreen = fGreen[x] * fGValue;
-			nBlue  = fBlue[x]  * fBValue;
+			nRed   = fRed[x]   * 255.0f;
+			nGreen = fGreen[x] * 255.0f;
+			nBlue  = fBlue[x]  * 255.0f;
 			SetPixel(hdc, x, y, RGB(nRed, nGreen, nBlue));
 		}
 	}
@@ -259,6 +303,15 @@ LRESULT OnClose(HWND hwnd)
 
 LRESULT OnDestroy(HWND hwnd)
 {
+	if (g_pSphere[0])
+		delete g_pSphere[0];
+
+	if (g_pSphere[1])
+		delete g_pSphere[1];
+
+	if (g_pSphere[2])
+		delete g_pSphere[2];
+
 	if (g_hbmRaster)
 		DeleteObject(g_hbmRaster);
 

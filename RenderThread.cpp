@@ -151,32 +151,72 @@ int RenderThread::getLine(int nLine, float *fRed, float *fGreen, float *fBlue, i
 	return m_rRender.getLine(nLine, fRed, fGreen, fBlue, nSize);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 int RenderThread::setDimensions(int nWidth, int nHeight)
 {
 	return m_rRender.setDimensions(nWidth, nHeight);
 }
+
+//////////////////////////////////////////////////////////////////////
 
 int RenderThread::getDimensions(int &nWidth, int &nHeight)
 {
 	return m_rRender.getDimensions(nWidth, nHeight);
 }
 
+//////////////////////////////////////////////////////////////////////
+
 int RenderThread::getWidth()
 {
 	return m_rRender.getWidth();
 }
+
+//////////////////////////////////////////////////////////////////////
 
 int RenderThread::getHeight()
 {
 	return m_rRender.getHeight();
 }
 
+//////////////////////////////////////////////////////////////////////
+
 int RenderThread::getLinesComplete()
 {
 	return m_rRender.getLinesComplete();
 }
 
+//////////////////////////////////////////////////////////////////////
+
 RenderStatus RenderThread::getRenderStatus()
 {
 	return m_rRender.getStatus();
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int RenderThread::setCamera(Camera &c)
+{
+	return m_rRender.setCamera(c);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int RenderThread::getCamera(Camera &c)
+{
+	return m_rRender.getCamera(c);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int RenderThread::setScene(Scene &s)
+{
+	return m_rRender.setScene(s);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+int RenderThread::getScene(Scene &s)
+{
+	return m_rRender.getScene(s);
 }

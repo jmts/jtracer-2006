@@ -35,7 +35,7 @@ HWND CreateJTracerWindow()
 
 	AdjustWindowRectEx(&rcWindow, dwStyle, FALSE, dwExStyle);
 
-	HWND hwnd = CreateWindowEx(dwExStyle, JTRACERWINDOWCLASS, _T("JTracer v0.2"),
+	HWND hwnd = CreateWindowEx(dwExStyle, JTRACERWINDOWCLASS, _T("JTracer v0.3"),
 		dwStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		rcWindow.right-rcWindow.left, rcWindow.bottom - rcWindow.top,

@@ -2,6 +2,8 @@
 #include "Globals.h"
 #include <windows.h>
 #include "Renderer.h"
+#include "Camera.h"
+#include "Scene.h"
 
 #ifndef _RENDERTHREAD_H_
 #define _RENDERTHREAD_H_
@@ -42,8 +44,6 @@ class RenderThread
 
 	static DWORD WINAPI ThreadProc(LPVOID lpParameter);
 
-
-
 	int getLine(int nLine, float *fRed, float *fGreen, float *fBlue, int nSize);
 
 	int setDimensions(int nWidth, int nHeight);
@@ -53,6 +53,12 @@ class RenderThread
 	int getLinesComplete();
 
 	RenderStatus getRenderStatus();
+
+	int setCamera(Camera &c);
+	int getCamera(Camera &c);
+
+	int setScene(Scene &s);
+	int getScene(Scene &s);
 };
 
 #endif
