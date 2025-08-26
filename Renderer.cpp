@@ -105,21 +105,41 @@ int Renderer::renderLine()
 			Color cAmbient   = m.getPigment() * m_sScene.getAmbientLight() * m.getAmbient();
 
 			Color cDiffuse;
+			Color cSpecular;
 			Vector vIntersect = r.o + (r.d*fTClosest);
 			for (int iLight = 0; iLight < m_sScene.getNumLights(); iLight++)
 			{
 				PointLight *lLight = m_sScene.getLight(iLight);
-				Vector vLight = (lLight->getPosition() - vIntersect).unit();
-				Vector vNormal = pClosest->getNormalAt(vIntersect);
-				
-				float fDot = vLight.dot(vNormal);
+				Ray rShadow(vIntersect, (lLight->getPosition() - vIntersect));
+				bool bShadow = false;
+				float fTShadow;
+				for (int s = 0; s < nPrimitives && !bShadow; s++)
 				{
+					Primitive *ps = m_sScene.getPrimitive(s);
+					if (pClosest != ps && ps->intersect(rShadow, fTShadow))
+						if (fTShadow > 0.0 && fTShadow < 1.0)
+							bShadow = true;
+				}
+
+				if (!bShadow)
+				{
+					Vector vLight = (lLight->getPosition() - vIntersect).unit();
+					Vector vNormal = pClosest->getNormalAt(vIntersect);
+					Vector vView = r.d;
+					Vector vReflect = (vLight).reflect(vNormal);
+					
+					float fDot;
+					fDot = vLight.dot(vNormal);
 					if (fDot > 0)
 						cDiffuse += m.getPigment() * lLight->getColor() * fDot * m.getDiffuse();
+	
+					fDot = vReflect.dot(vView);
+					if (fDot > 0)
+						cSpecular += lLight->getColor() * m.getSpecular() * std::pow(fDot, 15);
 				}
 			}
 
-			Color cPixel = cAmbient + cDiffuse;
+			Color cPixel = cAmbient + cDiffuse + cSpecular;
 
 			m_cCanvas.setPixel(x, m_nNextLine, cPixel);
 		}

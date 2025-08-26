@@ -3,19 +3,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-/*
-Material::Material()
-{
-	m_fAmbient = 0.0f;
-
-	m_cPigment.fRed   = 0.0f;
-	m_cPigment.fGreen = 0.0f;
-	m_cPigment.fBlue  = 0.0f;
-}
-*/
-
-//////////////////////////////////////////////////////////////////////
-
 int Material::setPigment(Color &c)
 {
 	m_cPigment = c;
@@ -74,3 +61,16 @@ float Material::getDiffuse()
 }
 
 //////////////////////////////////////////////////////////////////////
+
+int Material::setSpecular(float fSpecular)
+{
+	m_fSpecular = fSpecular;
+	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+float Material::getSpecular()
+{
+	return m_fSpecular;
+}

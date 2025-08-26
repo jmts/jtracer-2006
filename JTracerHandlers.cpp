@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "Sphere.h"
+#include "Plane.h"
 #include "Primitive.h"
 #include "PointLight.h"
 #include <cmath>
@@ -60,36 +61,47 @@ int LoadScene()
 	Primitive *pPrimitive;
 
 	// Red Sphere
-	mMaterial = Material(Color(1.0, 0.0, 0.0), 0.2, 1.0);
+	mMaterial = Material(Color(1.0, 0.0, 0.0), 0.0, 0.8, 1.0);
 	pPrimitive = new Sphere(Vector(-1, 0, 0), 0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
 	g_vPrimitives.push_back(pPrimitive);
 	
 	// Green Sphere
-	mMaterial = Material(Color(0.0, 1.0, 0.0), 0.2, 1.0);
+	mMaterial = Material(Color(0.0, 1.0, 0.0), 0.0, 0.8, 1.0);
 	pPrimitive = new Sphere(Vector(0, 0, 0), 0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
 	g_vPrimitives.push_back(pPrimitive);
 
 	// Blue Sphere
-	mMaterial = Material(Color(0.0, 0.0, 1.0), 0.2, 1.0);
+	mMaterial = Material(Color(0.0, 0.0, 1.0), 0.0, 0.8, 1.0);
 	pPrimitive = new Sphere(Vector(1, 0, 0), 0.5);
 	pPrimitive->setMaterial(mMaterial);
 	s.addPrimitive(pPrimitive);
 	g_vPrimitives.push_back(pPrimitive);
 
+	mMaterial = Material(Color(1.0, 1.0, 1.0), 0.1, 0.8, 1.0);
+	pPrimitive = new Plane(Vector(0, 1, 0), -0.5);
+	pPrimitive->setMaterial(mMaterial);
+	s.addPrimitive(pPrimitive);
+	g_vPrimitives.push_back(pPrimitive);
+
 	// Light
-	PointLight *lLight = new PointLight(Color(1.0, 1.0, 1.0), Vector(5.0, 5.0, -10.0));
+	PointLight *lLight = new PointLight(Color(1.0, 1.0, 1.0), Vector(10.0, 10.0, -10.0));
+	s.addLight(lLight);
+	g_vLights.push_back(lLight);
+
+	lLight = new PointLight(Color(1.0, 1.0, 1.0), Vector(-20.0, 10.0, -5.0));
 	s.addLight(lLight);
 	g_vLights.push_back(lLight);
 
 	g_tRender.setScene(s);
 
 	// Set Camera
-	Vector vPosition = Vector(0.0f, 0.0f, -5.0f);
-	Vector vLook = Vector(0.0f, 0.0f, 1.0f);
+	Vector vPosition(1.0f, 2.0f, -5.0f);
+	Vector vLookAt(0.0f, 0.0f, 0.0f);
+	Vector vLook = (vLookAt - vPosition).unit();
 	float fAspect = 4.0f/3.0f;
 	float fAngleOfView = M_PI/4.0f;
 	Camera cCamera(vPosition, vLook, fAspect, fAngleOfView);

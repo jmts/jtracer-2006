@@ -6,7 +6,11 @@ int Sphere::intersect(const Ray &ray, float &t)
 {
 	Vector dst = ray.o - o;
 
-	float B = dst.dot(ray.d);
+	float fLen = ray.d.length();
+
+	Vector dir = ray.d / fLen;
+
+	float B = dst.dot(dir);
 
 	float C = dst.dot(dst) - (r * r);
 
@@ -14,7 +18,7 @@ int Sphere::intersect(const Ray &ray, float &t)
 
 	if (D > 0)
 	{
-		t = -B - std::sqrt(D);
+		t = (-B - std::sqrt(D)) / fLen;
 		return 1;
 	}
 
