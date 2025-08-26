@@ -1,6 +1,7 @@
 
 #include "JTracerWindow.h"
 #include "JTracerHandlers.h"
+#include "RenderThread.h"
 
 ATOM InitJTracerWindow()
 {
@@ -34,7 +35,7 @@ HWND CreateJTracerWindow()
 
 	AdjustWindowRectEx(&rcWindow, dwStyle, FALSE, dwExStyle);
 
-	HWND hwnd = CreateWindowEx(dwExStyle, JTRACERWINDOWCLASS, _T("JTracer v0.1"),
+	HWND hwnd = CreateWindowEx(dwExStyle, JTRACERWINDOWCLASS, _T("JTracer v0.2"),
 		dwStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		rcWindow.right-rcWindow.left, rcWindow.bottom - rcWindow.top,
@@ -50,6 +51,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_CREATE: return OnCreate(hwnd, (LPCREATESTRUCT)lParam);
 
 		case WM_COMMAND: return OnCommand(hwnd, (int)LOWORD(wParam), (HWND)lParam, (UINT)HIWORD(wParam));
+
+		case WM_THREADSTARTED: return OnThreadStarted(hwnd);
+
+		case WM_THREADFINISHED: return OnThreadFinished(hwnd);
+
+		case WM_LINERENDERED: return OnLineRendered(hwnd);
 
 		case WM_CLOSE: return OnClose(hwnd);
 

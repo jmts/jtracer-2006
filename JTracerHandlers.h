@@ -7,6 +7,8 @@
 
 LRESULT OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
 LRESULT OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify);
+LRESULT OnThreadStarted(HWND hwnd);
+LRESULT OnThreadFinished(HWND hwnd);
 LRESULT OnLineRendered(HWND hwnd);
 LRESULT OnClose(HWND hwnd);
 LRESULT OnDestroy(HWND hwnd);

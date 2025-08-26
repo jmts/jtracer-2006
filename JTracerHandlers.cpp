@@ -1,5 +1,6 @@
 
 #include "JTracerHandlers.h"
+#include "RenderThread.h"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -7,7 +8,15 @@ HWND g_hImage;
 HWND g_hStartStop;
 BOOL g_bRunning;
 
-HBITMAP g_hbmBitmap;
+COLORREF g_crColorMap[3];
+int g_iMapIndex;
+
+HBITMAP g_hbmRaster;
+int g_nLinesUpdated;
+int g_nRasterWidth;
+int g_nRasterHeight;
+
+RenderThread g_tRender;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -49,7 +58,6 @@ LRESULT OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
 	dwStyle = WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON;
 	g_hStartStop = CreateWindowAdjustFontEx(dwExStyle, _T("BUTTON"), _T("Start"), dwStyle,
 		662, 10, 100, 21, hwnd, NULL, lpCreateStruct->hInstance, NULL);
-
 	g_bRunning = FALSE;
 
 	// Create 'Credit' Static
@@ -58,8 +66,18 @@ LRESULT OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
 	CreateWindowAdjustFontEx(dwExStyle, _T("STATIC"), _T("JTracer - By Joel Sheehan"), dwStyle,
 		10, 500, 200, 14, hwnd, NULL, lpCreateStruct->hInstance, NULL);
 
-	// Load Sample Picture
-	g_hbmBitmap = (HBITMAP)LoadImage(lpCreateStruct->hInstance, _T("image.bmp"), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	g_tRender.setNotifyWindow(hwnd);
+	g_tRender.setDimensions(640, 480);
+
+	g_hbmRaster = NULL;
+	g_nLinesUpdated = 0;
+	g_nRasterWidth = 0;
+	g_nRasterHeight = 0;
+
+	g_crColorMap[0] = RGB(255, 0, 0);
+	g_crColorMap[1] = RGB(0, 255, 0);
+	g_crColorMap[2] = RGB(0, 0, 255);
+	g_iMapIndex = -1;
 
 	return 0;
 }
@@ -70,20 +88,37 @@ LRESULT OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
 {
 	if (hwndCtl == g_hStartStop && codeNotify == BN_CLICKED)
 	{
-		if (g_bRunning)
+		if (!g_bRunning)
 		{
-			SetWindowText(g_hStartStop, _T("Start"));
-			g_bRunning = FALSE;
+			if (g_tRender.getStatus() != TS_READY)
+				g_tRender.reset();
 
-			SendMessage(g_hImage, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)NULL);
+			// Start And Wait For Notify From Thread
+			int ret;
+			if ((ret = g_tRender.start()) == 0)
+			{
+				SetWindowText(g_hStartStop, _T("Starting"));
+
+				EnableWindow(g_hStartStop, FALSE);
+			}
+			else
+			{
+				switch(ret)
+				{
+					case 1:  MessageBox(hwnd, _T("1!"), _T("1!"), MB_OK); break;
+					case 2:  MessageBox(hwnd, _T("2!"), _T("2!"), MB_OK); break;
+					default: MessageBox(hwnd, _T("Oh No!"), _T("Oh No!"), MB_OK); break;
+				}
+			}
 		}
 		else
 		{
-			SetWindowText(g_hStartStop, _T("Stop"));
-			g_bRunning = TRUE;
+			if (g_tRender.stop() == 0)
+			{
+				SetWindowText(g_hStartStop, _T("Stopping"));
 
-			if (g_hbmBitmap)
-				SendMessage(g_hImage, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)g_hbmBitmap);
+				EnableWindow(g_hStartStop, FALSE);
+			}
 		}
 	}
 
@@ -92,25 +127,129 @@ LRESULT OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
 
 //////////////////////////////////////////////////////////////////////
 
-/*
-LRESULT OnLineRendered(HWND hwnd)
+LRESULT OnThreadStarted(HWND hwnd)
 {
-	UpdateRaster();
+	SetWindowText(g_hStartStop, _T("Stop"));
 
-	hbmOldRaster = (HBITMAP)SendMessage(g_hImage, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)g_hbmRaster);
-	if (hbmOldRaster != g_hbmRaster && hbmOldRaster != NULL)
+	EnableWindow(g_hStartStop, TRUE);
+
+	g_bRunning = TRUE;
+
+	g_nLinesUpdated = 0;
+	g_iMapIndex = (g_iMapIndex + 1) % 3;
+
+	// Check Bitmap Size
+	int nWidth, nHeight;
+	g_tRender.getDimensions(nWidth, nHeight);
+	if (g_hbmRaster && (nWidth != g_nRasterWidth || nHeight != g_nRasterHeight))
 	{
-		DeleteObject(hbmOldRaster);
+		DeleteObject(g_hbmRaster);
+		g_hbmRaster = NULL;
+	}
+
+	// Create Bitmap
+	if (g_hbmRaster == NULL)
+	{
+		HDC hdc = CreateCompatibleDC(NULL);
+	
+		BITMAPINFOHEADER bmih = {0};
+		bmih.biSize = sizeof(BITMAPINFOHEADER);
+		bmih.biWidth = nWidth;
+		bmih.biHeight = nHeight;
+		bmih.biPlanes = 1;
+		bmih.biBitCount = 24;
+		bmih.biCompression = BI_RGB;
+
+		g_hbmRaster = CreateDIBSection(hdc, (BITMAPINFO*)&bmih, DIB_RGB_COLORS, NULL, NULL, NULL);
+
+		g_nRasterWidth = nWidth;
+		g_nRasterHeight = nHeight;
+
+		if (!g_hbmRaster)
+			MessageBox(hwnd, _T("Oh Shit"), _T("Oh Shit"), MB_OK);
+
+		DeleteDC(hdc);
+
+		HBITMAP hbmBlah = (HBITMAP)SendMessage(g_hImage, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)g_hbmRaster);
+		if (hbmBlah != g_hbmRaster)
+			DeleteObject(hbmBlah);
 	}
 
 	return 0;
 }
-*/
+
+//////////////////////////////////////////////////////////////////////
+
+LRESULT OnThreadFinished(HWND hwnd)
+{
+	// Clean Up
+	SetWindowText(g_hStartStop, _T("Waiting"));
+	g_tRender.wait();
+
+	// Reset Controls
+	SetWindowText(g_hStartStop, _T("Start"));
+	g_bRunning = FALSE;
+	EnableWindow(g_hStartStop, TRUE);
+
+	return 0;
+}
+
+LRESULT OnLineRendered(HWND hwnd)
+{
+	float *fRed = new float[g_nRasterWidth];
+	float *fGreen = new float[g_nRasterWidth];
+	float *fBlue = new float[g_nRasterWidth];
+
+	HDC hdc = CreateCompatibleDC(NULL);
+	HBITMAP hbmOld = (HBITMAP)SelectObject(hdc, g_hbmRaster);
+
+	int nRed, nGreen, nBlue;
+
+	int nLines = g_tRender.getLinesComplete();
+
+	float fRValue = GetRValue(g_crColorMap[g_iMapIndex]);
+	float fGValue = GetGValue(g_crColorMap[g_iMapIndex]);
+	float fBValue = GetBValue(g_crColorMap[g_iMapIndex]);
+
+	for (int y = g_nLinesUpdated; y < nLines; y++)
+	{
+		g_tRender.getLine(y, fRed, fGreen, fBlue, g_nRasterWidth);
+		for (int x = 0; x < g_nRasterWidth; x++)
+		{
+			nRed   = fRed[x]   * fRValue;
+			nGreen = fGreen[x] * fGValue;
+			nBlue  = fBlue[x]  * fBValue;
+			SetPixel(hdc, x, y, RGB(nRed, nGreen, nBlue));
+		}
+	}
+
+	g_nLinesUpdated = nLines;
+
+	SelectObject(hdc, hbmOld);
+	DeleteDC(hdc);
+
+	delete [] fBlue;
+	delete [] fGreen;
+	delete [] fRed;
+
+	HBITMAP hbmBlah = (HBITMAP)SendMessage(g_hImage, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM)g_hbmRaster);
+	if (hbmBlah != g_hbmRaster)
+		DeleteObject(hbmBlah);
+
+	return 0;
+}
 
 //////////////////////////////////////////////////////////////////////
 
 LRESULT OnClose(HWND hwnd)
 {
+	if (g_tRender.getStatus() == TS_RUNNING || g_tRender.getStatus() == TS_STOPPING)
+	{
+		MessageBox(hwnd, _T("Thread Still Running"), _T("Thread Still Running"), MB_OK);
+
+		return 1;
+	}
+
 	DestroyWindow(hwnd);
 
 	return 0;
@@ -120,8 +259,8 @@ LRESULT OnClose(HWND hwnd)
 
 LRESULT OnDestroy(HWND hwnd)
 {
-	if (g_hbmBitmap)
-		DeleteObject(g_hbmBitmap);
+	if (g_hbmRaster)
+		DeleteObject(g_hbmRaster);
 
 	PostQuitMessage(0);
 
